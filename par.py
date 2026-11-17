@@ -997,7 +997,7 @@ def simplify(M=0,N=0):
     smp_trace = smp_trace + ['&scl;&lcorr']
     abc('&get;&scl;&lcorr;&put')
 ##    abc('scl') # RKB temp
-    if n_latches == 0:
+    if n_latches() == 0:
         return get_status()
     p_40 = False
     n =n_ands()
@@ -3666,7 +3666,7 @@ def prove(a=0,abs_tried = False):
             return result
 ##    if n_latches() == 0:
 ##        return 'UNDECIDED'
-        assert n_latches > 0, 'number of latches == 0'
+        assert n_latches() > 0, 'number of latches == 0'
     if a == 1:
         spec_first = True
     t_init = 2
