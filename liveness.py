@@ -6,9 +6,9 @@ import subprocess
 
 from contextlib import contextmanager
 
-import affinity
+from . import affinity
 import pyabc
-import pyabc_split
+from . import pyabc_split
 import pyliveness
 import pyzz
 
@@ -19,7 +19,7 @@ def temp_file_names(N, suffix=""):
     
     try:
         
-        for i in xrange(N):
+        for i in range(N):
             files.append( tempfile.NamedTemporaryFile(suffix=suffix) )
             
         yield [ f.name for f in files ]
@@ -50,14 +50,14 @@ def parse_bip_status(status):
 
 
 def log(*args):
-    print 'LIVENESS (%d):'%os.getpid(), " ".join(str(arg) for arg in args)
+    print('LIVENESS (%d):'%os.getpid(), " ".join(str(arg) for arg in args))
 
 
 def run_bip(args, aiger):
 
     log('running: bip', " ".join(args), aiger)
 
-    import redirect
+    from . import redirect
     with redirect.redirect():
 
         with temp_file_names(1) as tmpnames:
@@ -197,7 +197,7 @@ def run_niklas_single(aiger, simplify, report_result, super_prove=None, timeout=
 
 def run_niklas_multi(aiger, simplify, report_result, super_prove=None):
     
-    with open(aiger, 'r') as fin:
+    with open(aiger, 'rb') as fin:
         aig = read_aiger( fin )
         
     n_j_pos = aig.n_justice()
@@ -209,13 +209,13 @@ def run_niklas_multi(aiger, simplify, report_result, super_prove=None):
     with temp_file_names(n_j_pos, suffix='.aig') as single_aiger:
         
         def extract(j_po):
-            with open(single_aiger[j_po], 'w') as fout:
+            with open(single_aiger[j_po], 'wb') as fout:
                 write_aiger(utils.extract_justice_po(aig, j_po), fout)
                 
-        for _ in pyabc_split.split_all_full( [pyabc_split.defer(extract)(i) for i in xrange(n_j_pos) ] ):
+        for _ in pyabc_split.split_all_full( [pyabc_split.defer(extract)(i) for i in range(n_j_pos) ] ):
             pass
             
-        unsolved = set( xrange(n_j_pos) )
+        unsolved = set( range(n_j_pos) )
         
         timeout = 1
         

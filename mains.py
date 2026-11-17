@@ -3,15 +3,15 @@ import time
 from datetime import *
 ##import par
 ##from abc_common import *
-import abc_common
+from . import abc_common
 
 #this makes par the dominant module insteat of abc_common
-from syn import *
+from .syn import *
 
 import sys
 import math
 import time
-from  pyabc_split import *
+from  .pyabc_split import *
 ##import pdb
 ##from IPython.Debugger import Tracer; debug_here = Tracer()
 
@@ -38,7 +38,7 @@ def scorriter():
         run_command('scorr -C %d'%n)
         x('ind -C %d'%1000)
         if is_unsat():
-            print 'n = %d'%n
+            print('n = %d'%n)
             break
         n = 2*n
     x('time')
@@ -58,7 +58,7 @@ def simplifyq():
         else:
             abc("scl;rw;dr;lcorr;rw;dr;scorr;fraig;dc2;dr;scorr -F 2;dc2rs;w temp.aig")    
     if n < 10000:
-        m = min( 30000/n, 8 )
+        m = min( 30000//n, 8 )
         if m > 2:
             abc( "scorr -F %d"%m)
     run_command("ps")
@@ -67,7 +67,7 @@ def constraints():
     """Determine if a set of files in a set of
     directories has constraints and print out the results."""
     for s in directories:
-        print("\ndirectory is "+s)
+        print(("\ndirectory is "+s))
         jj=eval(s)
         print(jj)
         for j in range(len(jj)):
@@ -98,7 +98,7 @@ def fn_def(f,n):
     filename = f.__code__.co_filename
     firstline = f.__code__.co_firstlineno
     lines = open(filename, "r").readlines()
-    print "".join(lines[firstline : n+firstline])
+    print("".join(lines[firstline : n+firstline]))
 
 def lst(list,match):
     result = []
@@ -123,7 +123,7 @@ def blif2aig():
     l_blif = lst(list_all,'.blif')
     for j in range(len(l_blif)):
         name = l_blif[j][:-5]
-        print '%s '%name,
+        print('%s '%name, end=' ')
         abc('r %s.blif'%name)
         abc('st')
         abc('fold')
@@ -145,7 +145,7 @@ def list_aig(s=''):
         name = name1[:-4]
         if not s_in_s(s,name):
             continue
-        print '%s '%name,
+        print('%s '%name, end=' ')
         abc('r %s.aig'%name)
         ps()
         result = result + [name1]
@@ -162,7 +162,7 @@ def list_size(d):
         name1 = d[j]
         name = name1[:-8]
         name2 = '../' + name+'.aig'
-        print name1,name2,name
+        print(name1,name2,name)
         run_command('r %s'%name2)
 ##        ps()
         result = result + [[name+'    '+ str([n_pis(),n_latches(),n_ands()])]]
@@ -201,7 +201,7 @@ def list_original():
             abc('r %s;&ps'%name)
             if n_latches() > 0 and n_pos() > 1:
                 size = str(sizeof())
-                print list_dir[i],
+                print(list_dir[i], end=' ')
                 ps()
                 out = out + ['%s: %s'%(list_dir[i],size)]
     return out
@@ -244,7 +244,7 @@ def list_blif(s=''):
         name = dir[j][:-5]
         if not s_in_s(s,name):
             continue
-        print '%s: '%name,
+        print('%s: '%name, end=' ')
         abc('read_blif %s.blif'%name)
         run_command('ps')
         abc('st;zero;w %s.aig'%name)
@@ -288,9 +288,9 @@ def cl():
     cleanup()
 
 def cleanup():
-    list = os.listdir('.') 
-    for j in range(len(list)):
-        name = list[j]
+    lst = os.listdir('.') 
+    for j in range(len(lst)):
+        name = lst[j]
         if ((s_in_s('_smp',name)) or (s_in_s('_save', name)) or (s_in_s('_gore', name)) or 
             (s_in_s('_bip', name)) or (s_in_s('_sm0', name)) or (s_in_s('_gabs', name)) 
             or (s_in_s('_temp', name)) or (s_in_s('__', name)) or (s_in_s('_greg', name)) or (s_in_s('tf2', name))
@@ -310,9 +310,9 @@ def cleanup():
         
 def xcl():
     cl()
-    list = os.listdir('.') 
-    for j in range(len(list)):
-        name = list[j]
+    lst = os.listdir('.') 
+    for j in range(len(lst)):
+        name = lst[j]
         if (
             (s_in_s('_SAT',name)) or (s_in_s('_UNSAT',name)) or (s_in_s('_UND',name)) or
             (s_in_s('_time',name))
@@ -328,7 +328,7 @@ def simp_mbi():
         name = l_aig[j][:-4]
         run_command('r %s.aig'%name)
         run_command('st')
-        print '\n%s: '%name
+        print('\n%s: '%name)
         print_circuit_stats()
         quick_simp()
         scorr_comp()
@@ -343,7 +343,7 @@ def strip_names():
         name = l_aig[j][:-4]
         run_command('r %s.aig'%name)
         run_command('st')
-        print '\n%s: '%name
+        print('\n%s: '%name)
         print_circuit_stats()
         quick_simp()
         scorr_comp()
@@ -356,7 +356,7 @@ def map_ibm():
     list_ibm = os.listdir('.')
     l_blif = lst(list_ibm,'.blif')
     result = []
-    print len(l_blif)
+    print(len(l_blif))
     for j in range(len(l_blif)):
         name = l_blif[j][:-5]
         result.append('%s = %d'%(name,j))
@@ -374,14 +374,14 @@ def absn(a,c,s):
     global G_C, G_T, latches_before_abs, x_factor, f_name
     set_globals()
     latches_before_abs = n_latches()
-    print 'Start: ',
+    print('Start: ', end=' ')
     print_circuit_stats()
-    print 'Een abstraction params: Method #%d, %d conflicts, %d stable'%(a,c,s)
+    print('Een abstraction params: Method #%d, %d conflicts, %d stable'%(a,c,s))
     run_command('&get; &abs_newstart -v -A %d -C %d -S %d'%(a,c,s))
     bmcdepth = n_bmc_frames()
-    print 'BMC depth = %d'%n_bmc_frames()
+    print('BMC depth = %d'%n_bmc_frames())
     abc('&w absn_greg.aig; &abs_derive; &put; w absn_gabs.aig')
-    print 'Final abstraction: ',
+    print('Final abstraction: ', end=' ')
     print_circuit_stats()
     write_file('absn')
     return "Done"
@@ -395,14 +395,14 @@ def apply_sp(list):
     global m_trace
     s = time_stamp()
     out_name = "%s-traces.txt"%s
-    print out_name
+    print(out_name)
     if os.access(out_name,os.R_OK):
         os.remove(out_name)
     f = open(out_name,'w')
-    print f
+    print(f)
     for j in range(len(list)):
         name = list[j]
-        print '\n\n**** %s ****\n'%name
+        print('\n\n**** %s ****\n'%name)
         f.write('\n\n****%s ****'%name)
         read_file_quiet(name)
         result = super_prove()
@@ -419,14 +419,14 @@ def apply_prs(list):
     global m_trace
     s = time_stamp()
     out_name = "%s-traces.txt"%s
-    print out_name
+    print(out_name)
     if os.access(out_name,os.R_OK):
         os.remove(out_name)
     f = open(out_name,'w')
-    print f
+    print(f)
     for j in range(len(list)):
         name = list[j]
-        print '\n\n**** %s ****\n'%name
+        print('\n\n**** %s ****\n'%name)
         f.write('\n\n****%s ****'%name)
         read_file_quiet(name)
         result = prs()
@@ -445,21 +445,21 @@ def xfiles():
     #output = open("ibm_log.txt",'w')
     # sys.stdout = output
     os.chdir('../ess/f58m')
-    print 'Directories are %s'%directories
+    print('Directories are %s'%directories)
     for s in directories:
         sss=  '../%s'%s
         os.chdir(sss)
-        print "\nDirectory is %s\n"%s
+        print("\nDirectory is %s\n"%s)
         jj=eval(s)
         print (jj)
         run_command('time')
         for j in range(len(jj)):
-            print ' '
+            print(' ')
             set_fname('p_%dsmp23'%jj[j])#file f_name.aig is read in
-            print 'p_%dsmp23'%jj[j]
+            print('p_%dsmp23'%jj[j])
             run_command('time')
             result = dprove3(1)
-            print result
+            print(result)
             run_command('time')
         run_command('time')
     os.chdir('../../python')
@@ -485,7 +485,7 @@ def s2l(s):
 
 def select(lst, s):
     result = []
-    print lst
+    print(lst)
     for j in range(len(lst)):
         if s in lst[j]:
             s1 = lst[j]
@@ -506,7 +506,7 @@ def process_result(name):
 def main():
     stackno = 0
     if len(sys.argv) != 2:
-        print "usage: %s <aig filename>"%sys.argv[0]
+        print("usage: %s <aig filename>"%sys.argv[0])
         sys.exit(1)
     aig_filename = sys.argv[1]
     x("source ../../abc.rc")
@@ -519,7 +519,7 @@ if __name__=="__main__":
 def gen_sudoku(name='sudoku'):
     s = time_stamp()
     out_name = name
-    print out_name
+    print(out_name)
     if os.access(out_name,os.R_OK):
         os.remove(out_name)
     f = open(out_name,'w')
@@ -580,7 +580,7 @@ def gen_sudoku(name='sudoku'):
                     for l in range(9):
                         if l > k:
                             xijw='x%s%d'%(sq[l],v)
-                            f.write('(~%s+~%s)'(xijv,xijw))
+                            f.write('(~%s+~%s)'%(xijv,xijw))
                     at_least_1 = at_least_1+'x%s%d+'%(sq[k],v)
                 at_least_1 = at_least_1[:-1]+')'
                 f.write(at_least_1)
@@ -589,7 +589,7 @@ def gen_sudoku(name='sudoku'):
 
 def gen_sq(ii,jj):
     # ii,jj is origin of square
-    rg = range(3)
+    rg = list(range(3))
     z = []
     for i in rg:
         for j in rg:
@@ -611,7 +611,7 @@ def show_values(x):
             v = get_value(x,i+1,j+1)
             w[j] = v
         M[i] = w
-        print M[i]
+        print(M[i])
 ##        print M
     return M
 

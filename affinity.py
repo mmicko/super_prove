@@ -1,59 +1,42 @@
+"""
+Portable CPU affinity helpers.
+
+On Linux these use os.sched_getaffinity()/os.sched_setaffinity(). Other
+platforms (e.g. macOS) have no API to pin a process to specific cores, so
+sched_getaffinity() reports all online CPUs and sched_setaffinity() does
+nothing; the OS scheduler is left to place the processes.
+"""
+
 import os
 
-import ctypes
-import ctypes.util
+_number_of_cores = os.cpu_count() or 1
 
-_number_of_cores = os.sysconf('SC_NPROCESSORS_ONLN')
+_has_affinity = hasattr(os, 'sched_getaffinity') and hasattr(os, 'sched_setaffinity')
 
-_pid_t = ctypes.c_int32
-_mask_t = ctypes.c_uint64
-
-def _or( values ):
-
-    res = 0
-
-    for v in values:
-        res |= v
-
-    return res
 
 def sched_getaffinity(pid):
 
-    _libc = ctypes.CDLL('libc.so.6', use_errno=True)
+    if _has_affinity:
+        return sorted(os.sched_getaffinity(pid))
 
-    mask = _mask_t()
-
-    rc = _libc.sched_getaffinity(
-        ctypes.c_int32(pid),
-        ctypes.sizeof(mask),
-        ctypes.byref(mask)
-    )
-
-    if rc!=0:
-        raise OSError(ctypes.get_errno(), 'sched_getaffinity(): %s'%os.strerror(ctypes.get_errno()))
-
-    mask = mask.value
-    return [ i for i in xrange(_number_of_cores) if mask&(1<<i) ]
+    return list(range(_number_of_cores))
 
 
 def sched_setaffinity(pid, cpus):
 
-    _libc = ctypes.CDLL('libc.so.6', use_errno=True)
+    cpus = list(cpus)
 
-    mask = _mask_t(_or(1<<c for c in cpus))
+    if _has_affinity and cpus:
+        os.sched_setaffinity(pid, cpus)
 
-    rc = _libc.sched_setaffinity(
-        ctypes.c_int32(pid),
-        ctypes.sizeof(mask),
-        ctypes.byref(mask)
-    )
+    mask = 0
+    for c in cpus:
+        mask |= 1 << c
 
-    if rc!=0:
-        raise OSError(ctypes.get_errno(), 'sched_setaffinity(): %s'%os.strerror(ctypes.get_errno()))
+    return mask
 
-    return mask.value
 
 if __name__=='__main__':
-    print sched_getaffinity(os.getpid())
+    print(sched_getaffinity(os.getpid()))
     sched_setaffinity(os.getpid(), [0,1])
-    print sched_getaffinity(os.getpid())
+    print(sched_getaffinity(os.getpid()))

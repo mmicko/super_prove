@@ -29,11 +29,12 @@ class archive(object):
     def put(self, x):
 
         if type(x) == int:
-            self.data.extend('%s%d'%(self.space, x))
+            self.data.extend(('%s%d'%(self.space, x)).encode())
             self.space = ' '
 
         elif type(x) == str:
-            self.data.extend('%s%d '%(self.space, len(x)))
+            x = x.encode()
+            self.data.extend(('%s%d '%(self.space, len(x))).encode())
             self.data.extend(x)
             self.space = ''
         
@@ -75,6 +76,8 @@ class message(object):
         self.data.append(x)
 
     def put_str(self, s):
+        if isinstance(s, str):
+            s = s.encode()
         self.data.extend(s)
 
     def put_archive(self, x):
@@ -103,17 +106,17 @@ class received_message(object):
         assert self.getc() == c
 
     def get_remaining(self):
-        return str(self.data[self.pos:])
+        return self.data[self.pos:].decode('utf-8', 'replace')
 
     def getu32(self):
         x = 0
-        for i in xrange(4):
+        for i in range(4):
             x |= self.get_next() << (i * 8)
         return x
 
     def get_vec_bool(self):
         n = self.getu()
-        values = [ self.getc() for i in xrange(n) ]
+        values = [ self.getc() for i in range(n) ]
         return values
 
     def get_vec_bool_as_cex(self):
@@ -127,7 +130,7 @@ class received_message(object):
         concrete = self.getu()
         frames = self.getu()
 
-        for i in xrange(frames):
+        for i in range(frames):
             cex.append( self.get_vec_bool_as_cex() )
         
         self.consume(1)
@@ -152,28 +155,28 @@ class par_client_handler(split.base_redirect_handler):
     HEADER_SIZE_LEN = 16
     HEADER_LEN = HEADER_TYPE_LEN + 1 +HEADER_SIZE_LEN + 1
 
-    HEADER_REGEX = re.compile(r'^(\d{%d}) (\d{%d}) $'%(HEADER_TYPE_LEN, HEADER_SIZE_LEN))
+    HEADER_REGEX = re.compile((r'^(\d{%d}) (\d{%d}) $'%(HEADER_TYPE_LEN, HEADER_SIZE_LEN)).encode())
 
     def __init__(self, loop, f):
 
         super(par_client_handler, self).__init__(loop, f)
         
-        self.header = ""
+        self.header = b""
         self.type = None
         self.size = None
-        self.content = ""
-        self.buffer = ""
+        self.content = b""
+        self.buffer = b""
 
     def on_start(self):
-        print "ENGINE STARTED"
+        print("ENGINE STARTED")
 
     def on_message(self, ptype, pcontent):
-        print 'RECEIVED MESSAGE type: ', ptype, ', content: "%s"'%pcontent.replace('\n', '\\n')
+        print('RECEIVED MESSAGE type: ', ptype, ', content: "%s"'%pcontent.decode('utf-8', 'replace').replace('\n', '\\n'))
 
     def send_message(self, ptype, pcontent):
 
-        self.write_stdin("%06u %016u "%(ptype, len(pcontent)))
-        self.write_stdin(pcontent)
+        self.write_stdin(("%06u %016u "%(ptype, len(pcontent))).encode())
+        self.write_stdin(bytes(pcontent))
 
     def on_data(self, fd, data):
         self.buffer += data
@@ -213,10 +216,10 @@ class par_client_handler(split.base_redirect_handler):
             if len(self.content) == self.size:
 
                 self.on_message(self.type, self.content)
-                self.header = ""
+                self.header = b""
                 self.type = None
                 self.size =  None
-                self.content = ''
+                self.content = b""
 
 
 class par_engine(par_client_handler):
@@ -395,9 +398,12 @@ class forked_engine(par_engine):
 
 
 def send_message(ptype, pcontent, fout=sys.stdout):
-    fout.write("%06u %016u "%(ptype, len(pcontent)))
-    fout.write(pcontent)
+    # the protocol is binary: write to the underlying byte stream of text files
     fout.flush()
+    out = getattr(fout, 'buffer', fout)
+    out.write(("%06u %016u "%(ptype, len(pcontent))).encode())
+    out.write(pcontent)
+    out.flush()
 
 
 def send_progress(prop_no, prop_type, depth, fout=sys.stdout):
@@ -429,7 +435,7 @@ if __name__=='__main__' :
 
         try:
 
-            for i in xrange(3):
+            for i in range(3):
                 time.sleep(0.1)
                 send_progress(0, 1, i)
 
@@ -450,7 +456,7 @@ if __name__=='__main__' :
         aig = AIG()
         w = aig.create_pi()
 
-        for i in xrange(n):
+        for i in range(n):
             w = aig.create_latch(next=w)
 
         po = aig.create_po(w, po_type=AIG.BAD_STATES)
@@ -472,25 +478,25 @@ if __name__=='__main__' :
 
             for uid, res in s:
                 
-                print uid, res
+                print(uid, res)
 
                 if uid == timer_uid:
-                    print "TIMEOUT"
+                    print("TIMEOUT")
                     break
 
                 if type(res) == par_engine.bug_free_depth:
-                    print res
+                    print(res)
                     if bug_free_depth[res.prop_no] < res.depth:
-                        print 'u%d'%res.depth
+                        print('u%d'%res.depth)
                         bug_free_depth[res.prop_no] = res.depth
 
                 if type(res) == par_engine.property_result:
-                    print res
+                    print(res)
                     break
 
                 if type(res) == int:
-                    print "RES: ", res
-                    print os.WIFEXITED(res), os.WIFSIGNALED(res), os.WEXITSTATUS(res)
+                    print("RES: ", res)
+                    print(os.WIFEXITED(res), os.WIFSIGNALED(res), os.WEXITSTATUS(res))
 
 
     engines = [

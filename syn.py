@@ -1,11 +1,11 @@
 from pyabc import *
-import pyabc_split
-import redirect
+from . import pyabc_split
+from . import redirect
 import sys
 import os
 import time
 import math
-import main
+from . import main
 import filecmp
 import regression
 
@@ -174,7 +174,7 @@ def set_engines(N=0):
 ##    #for HWMCC we want to set N = 8
 ##    N = 8
     if N == 0:
-        N = n_proc = 1+os.sysconf(os.sysconf_names["SC_NPROCESSORS_ONLN"])
+        N = n_proc = 1+(os.cpu_count() or 1)
 ##        N = n_proc = 8 ### simulate 4 processors for HWMCC - turn this off a hwmcc.
     else:
         n_proc = N
@@ -257,12 +257,12 @@ def set_globals():
     
 def a():
     """this puts the system into direct abc input mode"""
-    print "Entering ABC direct-input mode. Type q to quit ABC-mode"
+    print("Entering ABC direct-input mode. Type q to quit ABC-mode")
     n = 0
     while True:
-        print '     abc %d> '%n,
+        print('     abc %d> '%n, end=' ')
         n = n+1
-        s = raw_input()
+        s = input()
         if s == "q":
             break
         run_command(s)
@@ -297,16 +297,16 @@ def print_circuit_stats():
     c = cex_frame()
     if b>= 0:
         if c>=0:
-            print 'PIs=%d,POs=%d,FF=%d,%s=%d,max depth=%d,CEX depth=%d'%(i,o,l,s,a,b,c)
+            print('PIs=%d,POs=%d,FF=%d,%s=%d,max depth=%d,CEX depth=%d'%(i,o,l,s,a,b,c))
         elif is_unsat():
-            print 'PIs=%d,POs=%d,FF=%d,%s=%d,max depth = infinity'%(i,o,l,s,a)
+            print('PIs=%d,POs=%d,FF=%d,%s=%d,max depth = infinity'%(i,o,l,s,a))
         else:
-            print 'PIs=%d,POs=%d,FF=%d,%s=%d,max depth=%d'%(i,o,l,s,a,b)            
+            print('PIs=%d,POs=%d,FF=%d,%s=%d,max depth=%d'%(i,o,l,s,a,b))            
     else:
         if c>=0:
-            print 'PIs=%d,POs=%d,FF=%d,%s=%d,CEX depth=%d'%(i,o,l,s,a,c)
+            print('PIs=%d,POs=%d,FF=%d,%s=%d,CEX depth=%d'%(i,o,l,s,a,c))
         else:
-            print 'PIs=%d,POs=%d,FF=%d,%s=%d'%(i,o,l,s,a)
+            print('PIs=%d,POs=%d,FF=%d,%s=%d'%(i,o,l,s,a))
 
 
 def rf():
@@ -334,14 +334,14 @@ def read_file_quiet(fname=None):
     set_engines() #temporary
     init_simp = 1
     win_list = [(0,.1),(1,.1),(2,.1),(3,.1),(4,.1),(5,-1),(6,-1),(7,.1)] #initialize winning engine list
-    po_map = range(n_pos())
+    po_map = list(range(n_pos()))
     initialize()
 ##    x_factor = 1
 ##    seed = 223
 ##    max_bmc = -1
     if fname is None:
-        print 'Type in the name of the aig file to be read in'
-        s = raw_input()
+        print('Type in the name of the aig file to be read in')
+        s = input()
         s = remove_spaces(s)
 ##        print s
     else:
@@ -370,7 +370,7 @@ def read_file_quiet(fname=None):
     aigs_pp('push','initial')
     #aigs = create push/pop history of aigs
     #aigs.push() put the initial aig on the aig list.
-    print 'Initial f_name = %s'%f_name
+    print('Initial f_name = %s'%f_name)
     abc('addpi') #only does something if there are no PIs
     #check_pos() #this removes constant outputs with a warning -
     #needed when using iso. Need another fix for using iso.
@@ -420,20 +420,20 @@ def sop_balance(k=4):
 ##    kmax = k
     kmax=min(k+2,15)
     abc('st; if -K %d;ps'%kmax)
-    print nl(),
+    print(nl(), end=' ')
     kmax=min(k+2,15)
     abc('st; if  -g -C %d -K %d -F 2;ps'%(10,kmax)) #balance
-    print nl(),
+    print(nl(), end=' ')
     for i in range(1):
         abc('st;dch; if -C %d -K %d;ps'%(10,kmax))
-        print nl(),
+        print(nl(), end=' ')
 
 def speedup(k=4):
     run_command('speedup;if -K %d'%k)
-    print nl()
+    print(nl())
 
 def speed_tradeoff(k=4):
-    print nl(),
+    print(nl(), end=' ')
     best = n_nodes()
     abc('write_blif %s_bestsp.blif'%f_name)
     L_init = n_levels()
@@ -446,13 +446,13 @@ def speed_tradeoff(k=4):
             abc('write_blif %s_bestsp.blif'%f_name)
         if n_levels() == L_old:
             break
-        print nl(),
+        print(nl(), end=' ')
         continue
     abc('r %s_bestsp.blif'%f_name)
     return
 
 def area_tradeoff(k=4):
-    print nl(),
+    print(nl(), end=' ')
     best = n_nodes()
     abc('write_blif %s_bestsp.blif'%f_name)
     L_init = n_levels()
@@ -467,7 +467,7 @@ def area_tradeoff(k=4):
 ##        if n_levels() == L_old:
         if n_nodes == n_nodes_old:
             break
-        print nl(),
+        print(nl(), end=' ')
         continue
     abc('r %s_bestar.blif'%f_name)
     return
@@ -489,7 +489,7 @@ def map_lut_dch_iter(k=8):
 ##            print 'best=%d'%best
             n = 0
             abc('write_blif %s_best.blif'%f_name)
-            print nl(),
+            print(nl(), end=' ')
             continue
         else:
             n = n+1
@@ -502,7 +502,7 @@ def map_lut(k=4):
     '''minimizes edge count'''
     for i in range(5):
         abc('st; if -e -K %d; ps;  mfs ;ps; lutpack -L 50; ps'%(k))
-        print nl(),
+        print(nl(), end=' ')
 
 def nl():
     return [n_nodes(),n_levels()]
@@ -513,11 +513,11 @@ def dc2_iter(th=.999):
     while True:
         na=n_ands()
         abc('dc2')
-        print n_ands(),
+        print(n_ands(), end=' ')
 ##        print nl(),
         if n_ands() > th*na:
             break
-    print 't = %.2f, '%(time.time()-tm),
+    print('t = %.2f, '%(time.time()-tm), end=' ')
     ps()
 ##    print n_ands()
 
@@ -540,7 +540,7 @@ def speedup_iter(k=8):
     abc('write_blif %s_bests.blif'%f_name)
     run_command('ps')
     best = n_levels()
-    print 'n_levels before speedup = %d'%n_levels()
+    print('n_levels before speedup = %d'%n_levels())
     n=0
     while True:
         nl()
@@ -554,12 +554,12 @@ def speedup_iter(k=8):
         if n>2:
             break
     abc('r %s_bests.blif'%f_name)
-    print 'n_levels = %d'%n_levels()
+    print('n_levels = %d'%n_levels())
 
 def jog(n=16):
     """ applies to a mapped blif file"""
     run_command('eliminate -N %d;fx'%n)
-    run_command('if -K %d'%(n/2))
+    run_command('if -K %d'%(n//2))
     run_command('fx')
 
 def perturb_f(k=4):
@@ -635,7 +635,7 @@ def save_bestk(b,k):
     if n_nodes() < res:
         res = n_nodes()
         abc('write_blif %s_best%d.blif'%(f_name,k))
-        print 'best%d = %d'%(k,res)
+        print('best%d = %d'%(k,res))
     return res
 ##    unsave_bestk(k)
 
@@ -659,22 +659,22 @@ def map_until_conv(k=4):
     #get initial map and save
     map_lut_dch(k)
     bestk = save_bestk(100000,k)
-    print nl()
+    print(nl())
 ##    snap()
     res = preprocess() #get best of initial, clp, and lutmin versions
-    print nl()
+    print(nl())
     map_lut_dch_iter(kk) #initialize with mapping with 2k input LUTs
     bestkk = save_bestk(100000,kk)
     snap()
     unsnap(k) #have to do snap first if want current result snapped in.
         # unsnap fraigs snapshots and does map_lut_dch at end
-    print nl()
+    print(nl())
     bestk = save_bestk(bestk,k)
     abc('r %s_bestk%d.blif'%(f_name,k))
     map_iter(k) #1
     bestk = save_bestk(bestk,k)
     while True:
-        print 'Perturbing with %d-Lut'%kk
+        print('Perturbing with %d-Lut'%kk)
 ##        snap()
         map_lut_dch_iter(kk)
 ##        snap()
@@ -694,9 +694,9 @@ def map_until_conv(k=4):
         continue
     abc('fraig_restore') #dump what is left in fraig_store
     unsave_bestk(k)
-    print '\nFinal size = ',
-    print nl()
-    print 'time for %s = %.02f'%(f_name,(time.time()-tt))
+    print('\nFinal size = ', end=' ')
+    print(nl())
+    print('time for %s = %.02f'%(f_name,(time.time()-tt)))
 ##    cec_it()
 
 def get_bestk(k=4):
@@ -722,7 +722,7 @@ def map_iter(k=4):
 ##        print old_bestk
         map_lut_dch_iter(k)
         bestk = save_bestk(bestk,k)
-        print bestk
+        print(bestk)
         if bestk < old_bestk:
             n=0 # keep it up
             continue
@@ -730,7 +730,7 @@ def map_iter(k=4):
             break
         else:
             n = n+1
-            print '%d-perturb'%n
+            print('%d-perturb'%n)
 ##            snap()
 ##            unsave_bestk(k)
     unsave_bestk(k)
@@ -749,7 +749,7 @@ def map_star(k=4):
             best = n_nodes()
             abc('write_blif %s_best_star.blif'%f_name)
     abc('r %s_best_star.blif'%f_name)
-    print 'SIZE = %d, TIME = %.2f for %s'%(n_nodes(),(time.time() - tt),f_name)
+    print('SIZE = %d, TIME = %.2f for %s'%(n_nodes(),(time.time() - tt),f_name))
 
 def decomp_444():
     abc('st; dch; if -K 10 -S 444')
@@ -759,13 +759,13 @@ def decomp_444():
 def lut():
     dc2_iter()
     abc('extract -a')
-    print nl()
+    print(nl())
     dc2_iter()
 ##    ps()
     sop_balance(6)
     map_lut_dch()
     map_lut()
-    print nl()
+    print(nl())
 ##    run_command('ps')
 
 def sizeof():

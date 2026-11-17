@@ -1,10 +1,10 @@
 import sys
 import os
 import pyabc
-import par
+from . import par
 import tempfile
 import shutil
-import redirect
+from . import redirect
 import optparse
 
 from contextlib import contextmanager
@@ -25,7 +25,7 @@ def chdir_cmd(args):
 pyabc.add_abc_command(chdir_cmd, "ZPython", "/cd", 0)
 
 def pwd_cmd(args):
-    print os.getcwd()
+    print(os.getcwd())
     return 0
 
 pyabc.add_abc_command(pwd_cmd, "ZPython", "/pwd", 0)
@@ -89,11 +89,11 @@ def print_aiger_result(args):
     status = pyabc.prob_status()
     
     if status==1:
-        print 0
+        print(0)
     elif status==0:
-        print 1
+        print(1)
     else:
-        print 2
+        print(2)
     
     return 0
     
@@ -115,10 +115,10 @@ def replace_report_result(write_cex=False, bmc_depth=False):
     
     def report_result(po, result):
         
-        print "REPORT RESULT: ", po, result
+        print("REPORT RESULT: ", po, result)
         
-        print >> stdout, "%d"%result
-        print >> stdout, "b%d"%po
+        print("%d"%result, file=stdout)
+        print("b%d"%po, file=stdout)
 
         if write_cex:
             with temp_filename() as name:
@@ -126,22 +126,22 @@ def replace_report_result(write_cex=False, bmc_depth=False):
                 with open(name, 'r') as f:
                     stdout.write(f.read())
                         
-        print >> stdout, "."
+        print(".", file=stdout)
         
     def report_liveness_result(po, result):
         
-        print "REPORT RESULT: ", po, result
+        print("REPORT RESULT: ", po, result)
         
-        print >> stdout, "%d"%result
-        print >> stdout, "j%d"%po
-        print >> stdout, "."
+        print("%d"%result, file=stdout)
+        print("j%d"%po, file=stdout)
+        print(".", file=stdout)
 
     def report_bmc_depth(depth):
         
-        print "REPORT BMC DEPTH:", depth
+        print("REPORT BMC DEPTH:", depth)
 
         if bmc_depth:
-            print >> stdout, "u%d"%depth
+            print("u%d"%depth, file=stdout)
     
     with redirect.save_stdout() as stdout:
         
@@ -180,7 +180,7 @@ def proof_command_wrapper_internal(prooffunc, category_name, command_name, chang
             return 0
             
         if options.noisy and options.redirect:
-            print 'error: options -n/--no_redirect and -r/--redirect are mutually exclusive'
+            print('error: options -n/--no_redirect and -r/--redirect are mutually exclusive')
             return 0
             
         aig_filename = os.path.abspath(args[1])
@@ -247,7 +247,7 @@ proof_command_wrapper(par.mp,  'HWMCC', '/multi_prove_aiger',  0, write_cex=True
 def simple_liveness_prooffunc(aig_filename, old_stdout):
 
     try:
-        import liveness
+        from . import liveness
     except:
         import traceback
         traceback.print_exc()
@@ -255,7 +255,7 @@ def simple_liveness_prooffunc(aig_filename, old_stdout):
     from pyaig import utils
 
     def simplify(aiger_in, aiger_out):
-        print 'SIMPLIFY: start simplify', aiger_in, aiger_out
+        print('SIMPLIFY: start simplify', aiger_in, aiger_out)
         
         with liveness.temp_file_names(2, suffix='.aig') as tmp:
 
@@ -269,7 +269,7 @@ def simple_liveness_prooffunc(aig_filename, old_stdout):
 
             utils.restore_po_info( saved, tmp[1], aiger_out )
             
-            print 'SIMPLIFY: ended simplify'
+            print('SIMPLIFY: ended simplify')
 
             return True
         
@@ -326,7 +326,7 @@ def bmcs_prooffunc(aig_filename, old_stdout):
         if result == 0:
             par.report_bmc_depth(frame)
 
-        print 'callback: ', frame, po, result
+        print('callback: ', frame, po, result)
 
     pyabc.run_command('read "%s"'%aig_filename)
     pyabc.run_command('&get')
@@ -350,7 +350,7 @@ proof_command_wrapper_internal( bmcs_prooffunc, "HWMCC", "/bmcs_aiger", 0, multi
 def super_deep(aig_filename, old_stdout):
 
     import pyaig
-    import par_client
+    from . import par_client
     from collections import defaultdict
 
     def bmcs_engine(aig_filename, old_stdout):
@@ -435,7 +435,7 @@ def super_deep(aig_filename, old_stdout):
         for uid, res in s:
 
             if type(res) in printable_types:
-                print uid, res
+                print(uid, res)
 
             if uid == simplifier_id and res == simplified_aig:
 
@@ -449,7 +449,7 @@ def super_deep(aig_filename, old_stdout):
                 
                 if res.depth > bug_free_depth:
                     if armin_limit is None or bug_free_depth <= bug_free_depth_limit:
-                        print >> old_stdout, 'u%d'%res.depth
+                        print('u%d'%res.depth, file=old_stdout)
                     bug_free_depth = res.depth
 
             elif type(res) == par_client.par_engine.property_result:
@@ -459,16 +459,16 @@ def super_deep(aig_filename, old_stdout):
                     if res.engine.endswith('-simplified') or res.engine.startswith(',bmc'):
                         continue
 
-                    print >> old_stdout, '1'
-                    print >> old_stdout, 'b0'
-                    print >> old_stdout, '\n'.join(res.cex)
-                    print >> old_stdout, '.'
+                    print('1', file=old_stdout)
+                    print('b0', file=old_stdout)
+                    print('\n'.join(res.cex), file=old_stdout)
+                    print('.', file=old_stdout)
                     break
 
                 elif res.result == 'proved':
-                    print >> old_stdout, '0'
-                    print >> old_stdout, 'b0'
-                    print >> old_stdout, '.'
+                    print('0', file=old_stdout)
+                    print('b0', file=old_stdout)
+                    print('.', file=old_stdout)
                     break
 
             elif type(res) == par_client.par_engine.json_result:
@@ -478,16 +478,16 @@ def super_deep(aig_filename, old_stdout):
                     if res.engine.endswith('-simplified') or res.engine.startswith(',bmc'):
                         continue
 
-                    print >> old_stdout, '1'
-                    print >> old_stdout, 'b0'
-                    print >> old_stdout, '\n'.join(res.json['cex'])
-                    print >> old_stdout, '.'
+                    print('1', file=old_stdout)
+                    print('b0', file=old_stdout)
+                    print('\n'.join(res.json['cex']), file=old_stdout)
+                    print('.', file=old_stdout)
                     break
 
                 elif res.json['status'] == 'UNSAT':
-                    print >> old_stdout, '0'
-                    print >> old_stdout, 'b0'
-                    print >> old_stdout, '.'
+                    print('0', file=old_stdout)
+                    print('b0', file=old_stdout)
+                    print('.', file=old_stdout)
                     break
 
     os._exit(0)
